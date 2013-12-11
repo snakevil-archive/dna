@@ -1,18 +1,18 @@
-local DNaServer = {}
-DNaServer.__index = DNaServer
+local DnaServer = {}
+DnaServer.__index = DnaServer
 
-setmetatable(DNaServer, {
-    --- DNaServer() - Alias of `DNaServer.new()`.
+setmetatable(DnaServer, {
+    --- DnaServer() - Alias of `DnaServer.new()`.
     __call = function (server, ... )
         return server.new(...)
     end
 })
 
---- DNaServer.new() - Creates a server
+--- DnaServer.new() - Creates a server
 -- @param host Address to bind
 -- @param port Port to listen
--- @return DNaServer object
-function DNaServer.new(host, port)
+-- @return DnaServer object
+function DnaServer.new(host, port)
     if not host then
         host = '127.0.0.1'
     elseif 'string' ~= type(host) then
@@ -23,7 +23,7 @@ function DNaServer.new(host, port)
     elseif 'number' ~= type(host) then
         port = tonumber(port)
     end
-    local self, socket = setmetatable({}, DNaServer), require('socket')
+    local self, socket = setmetatable({}, DnaServer), require('socket')
     self.conn = socket.udp()
     self.conn:settimeout(0)
     assert(self.conn:setsockname(host, port))
@@ -32,14 +32,14 @@ function DNaServer.new(host, port)
     return self
 end
 
---- DNaServer:shutdown() - Shutdowns the server
-function DNaServer:shutdown()
+--- DnaServer:shutdown() - Shutdowns the server
+function DnaServer:shutdown()
     self.conn:close()
 end
 
---- DNaServer:request() - Receives a new request
+--- DnaServer:request() - Receives a new request
 -- @return nil or request object
-function DNaServer:request()
+function DnaServer:request()
     local req, phost, pport = self.conn:receivefrom()
     if not req then
         error{
@@ -54,12 +54,12 @@ function DNaServer:request()
     }
 end
 
---- DNaServer:request() - Responds the current request
+--- DnaServer:request() - Responds the current request
 -- @param response Response object
-function DNaServer:respond(response)
+function DnaServer:respond(response)
     if response then
         self.conn:sendto(response.blob, response.host, response.port)
     end
 end
 
-return DNaServer
+return DnaServer

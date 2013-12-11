@@ -6,4 +6,4 @@ end)
 
 package.path = package.path .. string.gsub(arg[0], '(.*/).*', ';%1?.lua')
 
-require('dnaction.core')()
+require('dna.core')()

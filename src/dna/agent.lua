@@ -1,25 +1,25 @@
-local DNaAgent = {
+local DnaAgent = {
     mode = {
         tcp = 'tcp',
         udp = 'udp'
     }
 }
-DNaAgent.__index = DNaAgent
+DnaAgent.__index = DnaAgent
 
-setmetatable(DNaAgent, {
-    --- DNaAgent() - Alias of `DNaAgent.new()`.
+setmetatable(DnaAgent, {
+    --- DnaAgent() - Alias of `DnaAgent.new()`.
     __call = function (agent, ... )
         return agent.new(...)
     end
 })
 
---- DNaAgent.new() - Creates an agent
+--- DnaAgent.new() - Creates an agent
 -- @param host Address of remote name server
 -- @param port Port of remote name server
 -- @param mode Connection mode to query
 -- @param timeout Total communication time of the query
--- @return DNaAgent object
-function DNaAgent.new(host, port, mode, timeout)
+-- @return DnaAgent object
+function DnaAgent.new(host, port, mode, timeout)
     if not host then
         error{
             code = 3
@@ -33,14 +33,14 @@ function DNaAgent.new(host, port, mode, timeout)
         port = tonumber(port)
     end
     if not mode then
-        mode = DNaAgent.mode.udp
+        mode = DnaAgent.mode.udp
     elseif 'string' ~= type(mode) then
         mode = string.lower(tostring(mode))
     else
         mode = string.lower(mode)
     end
-    if DNaAgent.mode.tcp ~= mode and DNaAgent.mode.udp ~= mode then
-        mode = DNaAgent.mode.udp
+    if DnaAgent.mode.tcp ~= mode and DnaAgent.mode.udp ~= mode then
+        mode = DnaAgent.mode.udp
     end
     if not timeout then
         timeout = 3
@@ -53,29 +53,29 @@ function DNaAgent.new(host, port, mode, timeout)
         mode = mode,
         timeout = timeout,
         counter = 0
-    }, DNaAgent)
+    }, DnaAgent)
     return self
 end
 
---- DNaAgent:query() - Communicates the remote name server
+--- DnaAgent:query() - Communicates the remote name server
 -- @param query Query blob
 -- @return Result blob
-function DNaAgent:query(query)
+function DnaAgent:query(query)
     if not query then
         return nil
     elseif 'string' ~= type(query) then
         query = tostring(query)
     end
-    if DNaAgent.mode.udp == self.mode then
+    if DnaAgent.mode.udp == self.mode then
         return self:udp(query)
     end
     return self:tcp(query)
 end
 
---- DNaAgent:tcp() - Communicates in TCP
+--- DnaAgent:tcp() - Communicates in TCP
 -- @param query Query blob
 -- @return Result blob
-function DNaAgent:tcp(query)
+function DnaAgent:tcp(query)
     self.conn = require('socket').tcp()
     self.conn:settimeout(self.timeout)
     assert(self.conn:connect(self.host, self.port))
@@ -86,10 +86,10 @@ function DNaAgent:tcp(query)
     return result
 end
 
---- DNaAgent:udp() - Communicates in UDP
+--- DnaAgent:udp() - Communicates in UDP
 -- @param query Query blob
 -- @return Result blob
-function DNaAgent:udp(query)
+function DnaAgent:udp(query)
     if 0 == self.counter then
         self.conn = require('socket').udp()
         self.conn:settimeout(self.timeout)
@@ -99,9 +99,9 @@ function DNaAgent:udp(query)
     return self.conn:receive()
 end
 
---- DNaAgent:appease() - Adapts the query
+--- DnaAgent:appease() - Adapts the query
 -- @param request Request object
-function DNaAgent:appease(request)
+function DnaAgent:appease(request)
     if not request then
         return
     end
@@ -116,4 +116,4 @@ function DNaAgent:appease(request)
     end
 end
 
-return DNaAgent
+return DnaAgent
