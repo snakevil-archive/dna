@@ -24,13 +24,13 @@ local DnaConfig = {
 local DNA = setmetatable({
         _VERSION = 'DNA 0.0.1-alpha',
         host = DnaConfig.host,
-        port = DnaConfig.port,
-        triggers = {}
+        port = DnaConfig.port
     }, {
         --- DNA() - Configs and runs
-        -- @param config Configuration table
+        -- @param ... Runtime options
         -- @return self object
-        __call = function (DNA, config)
+        __call = function (DNA, ...)
+            local triggers = require('dna.triggers')
             local key, value
             if 'table' == type(config) then
                 for key, value in pairs(config) do
@@ -46,15 +46,25 @@ local DNA = setmetatable({
                     end
                 end
             end
-            local listener = require('dna.listener')(DNA.triggers, require('dna.logger')(DnaConfig.log.path, DnaConfig.log.level))
+            local listener = require('dna.listener')(triggers, require('dna.logger')(DnaConfig.log.path, DnaConfig.log.level))
             DNA.serve(listener)
         end
     })
 
+--- DNA.help() - Prints help
+function DNA.help(listener)
+    listener:fire('dna.help', DNA)
+end
+
+--- DNA.version() - Prints version
+function DNA.version(listener)
+    listener:fire('dna.version', DNA)
+end
+
 --- DNA.serve() - Serves as a daemon
 -- @param listener Event listener
 function DNA.serve(listener)
-    listener:fire('dna.setup')
+    listener:fire('dna.setup', DNA)
     local server = DNA.server(listener)
     repeat
         DNA.agent(listener):appease(server:request())
@@ -101,9 +111,5 @@ function DNA.agent(listener)
     end
     return worker
 end
-
-pcall(function ()
-    require('dna.triggers')(DNA)
-end)
 
 return DNA
