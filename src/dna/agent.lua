@@ -10,6 +10,7 @@ local DnaAgent = {
 DnaAgent.__index = DnaAgent
 
 setmetatable(DnaAgent, {
+    __index = require('dna.reporter'),
     --- DnaAgent() - Alias of `DnaAgent.new()`.
     __call = function (agent, ... )
         return agent.new(...)
@@ -51,17 +52,13 @@ function DnaAgent.new(host, port, mode, timeout, listener)
     elseif 'number' ~= type(timeout) then
         timeout = tonumber(timeout)
     end
-    local self = setmetatable({
+    return setmetatable({
         host = host,
         port = port,
         mode = mode,
         timeout = timeout,
         counter = 0
-    }, DnaAgent)
-    if 'table' == type(listener) then
-        self.hq = listener
-    end
-    return self
+    }, DnaAgent):addListener(listener)
 end
 
 --- DnaAgent:query() - Communicates the remote name server
@@ -191,15 +188,6 @@ function DnaAgent:appease(request)
     self.counter = 1 + self.counter
     if response.blob and #response.blob then
         return request.server:respond(response)
-    end
-end
-
---- DnaAgent:report() - Reports event
--- @param event Active event name
--- @param context Table of context information
-function DnaAgent:report(event, context)
-    if self.hq then
-        self.hq:fire(event, context)
     end
 end
 

@@ -5,6 +5,7 @@ local DnaServer = {}
 DnaServer.__index = DnaServer
 
 setmetatable(DnaServer, {
+    __index = require('dna.reporter'),
     --- DnaServer() - Alias of `DnaServer.new()`.
     __call = function (server, ... )
         return server.new(...)
@@ -26,10 +27,7 @@ function DnaServer.new(host, port, listener)
     elseif 'number' ~= type(host) then
         port = tonumber(port)
     end
-    local self = setmetatable({}, DnaServer)
-    if 'table' == type(listener) then
-        self.hq = listener
-    end
+    local self = setmetatable({}, DnaServer):addListener(listener)
     self:report('dna.server.setup', {
         host = host,
         port = port
@@ -88,15 +86,6 @@ function DnaServer:respond(response)
         else
             self:report('dna.server.touch.done', response)
         end
-    end
-end
-
---- DnaServer:report() - Reports event
--- @param event Active event name
--- @param context Table of context information
-function DnaServer:report(event, context)
-    if self.hq then
-        self.hq:fire(event, context)
     end
 end
 

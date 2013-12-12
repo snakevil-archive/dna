@@ -86,12 +86,12 @@ local DNA = setmetatable({
                     end
                 end
             end
-            local reporter = require('dna.reporter')(DNA.triggers, DNA):fire('dna.setup')
-            local server = DNA.server(reporter)
+            local listener = require('dna.listener')(DNA.triggers, DNA):fire('dna.setup')
+            local server = DNA.server(listener)
             repeat
-                DNA.agent(reporter):appease(server:request())
+                DNA.agent(listener):appease(server:request())
             until nil
-            reporter:fire('dna.shutdown', server)
+            listener:fire('dna.shutdown', server)
         end
     })
 

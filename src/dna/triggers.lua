@@ -1,4 +1,5 @@
 return function (DNA)
+    local DNSHosts = {}
 
     --- DNA.triggers['dna.setup']() - Handles 'dna.setup' event
     DNA.triggers['dna.setup'] = function ()
@@ -57,9 +58,10 @@ return function (DNA)
     --- DNA.triggers['dna.server.touch']() - Handles 'dna.server.touch' event
     -- @param response Response object
     DNA.triggers['dna.server.touch'] = function (response)
-        local hosts, match, pattern = {}, '', string.char(192, 46, 0, 1, 0, 1, 0, 0, 46, 46, 0, 4, 46, 46, 46, 46)
+        local match, pattern = '', string.char(192, 46, 0, 1, 0, 1, 0, 0, 46, 46, 0, 4, 46, 46, 46, 46)
+        DNSHosts = {}
         for match in response.blob:gmatch(pattern) do
-            hosts[1 + #hosts] = string.format('%d.%d.%d.%d', match:byte(-4, -1))
+            DNSHosts[1 + #DNSHosts] = string.format('%d.%d.%d.%d', match:byte(-4, -1))
         end
     end
 
@@ -72,11 +74,7 @@ return function (DNA)
     --- DNA.triggers['dna.server.touch.done']() - Handles 'dna.server.touch.done' event
     -- @param response Response object
     DNA.triggers['dna.server.touch.done'] = function (response)
-        local quatity, match, pattern = 0, '', string.char(192, 46, 0, 1, 0, 1, 0, 0, 46, 46, 0, 4, 46, 46, 46, 46)
-        for match in response.blob:gmatch(pattern) do
-            quatity = 1 + quatity
-        end
-        DNA.log(response.host .. '.' .. response.port .. ': got ' .. quatity .. ' records', nil, DNA.log.warning)
+        DNA.log(response.host .. '.' .. response.port .. ': got ' .. #DNSHosts .. ' records', nil, DNA.log.warning)
     end
 
     --- DNA.triggers['dna.shutdown']() - Handles 'dna.shutdown' event
