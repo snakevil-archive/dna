@@ -35,7 +35,7 @@ function DnaServer.new(host, port, listener)
         port = port
     })
     DnaServerSocket = LuaSocket.udp()
-    DnaServerSocket:settimeout(0)
+    DnaServerSocket:settimeout(60)
     local state, fault = DnaServerSocket:setsockname(host, port)
     if not state then
         self:report('dna.server.setup.fail', {
