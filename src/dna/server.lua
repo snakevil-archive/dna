@@ -1,3 +1,6 @@
+local LuaSocket = require('socket')
+local DnaServerSocket
+
 local DnaServer = {}
 DnaServer.__index = DnaServer
 
@@ -7,12 +10,12 @@ setmetatable(DnaServer, {
         return server.new(...)
     end
 })
-
 --- DnaServer.new() - Creates a server
 -- @param host Address to bind
 -- @param port Port to listen
+-- @param listener Object to listen events report
 -- @return DnaServer object
-function DnaServer.new(host, port)
+function DnaServer.new(host, port, listener)
     if not host then
         host = '127.0.0.1'
     elseif 'string' ~= type(host) then
@@ -23,42 +26,77 @@ function DnaServer.new(host, port)
     elseif 'number' ~= type(host) then
         port = tonumber(port)
     end
-    local self, socket = setmetatable({}, DnaServer), require('socket')
-    self.conn = socket.udp()
-    self.conn:settimeout(0)
-    assert(self.conn:setsockname(host, port))
-    self.host, self.port = self.conn:getsockname()
-    self.host = socket.dns.tohostname(self.host)
+    local self = setmetatable({}, DnaServer)
+    if 'table' == type(listener) then
+        self.hq = listener
+    end
+    self:report('dna.server.setup', {
+        host = host,
+        port = port
+    })
+    DnaServerSocket = LuaSocket.udp()
+    DnaServerSocket:settimeout(0)
+    local state, fault = DnaServerSocket:setsockname(host, port)
+    if not state then
+        self:report('dna.server.setup.fail', {
+            host = host,
+            port = port,
+            reason = fault
+        })
+    else
+        self.host, self.port = DnaServerSocket:getsockname()
+        self.host = LuaSocket.dns.tohostname(self.host)
+        self:report('dna.server.setup.done', self)
+    end
     return self
 end
 
 --- DnaServer:shutdown() - Shutdowns the server
 function DnaServer:shutdown()
-    self.conn:close()
+    self:report('dna.server.shutdown', self)
+    DnaServerSocket:close()
+    self:report('dna.server.shutdown.done')
 end
 
 --- DnaServer:request() - Receives a new request
 -- @return nil or request object
 function DnaServer:request()
-    local req, phost, pport = self.conn:receivefrom()
-    if not req then
-        error{
-            code = -1
-        }
-    end
-    return {
+    local req, phost, pport = DnaServerSocket:receivefrom()
+    local request = {
         server = self,
         host = phost,
         port = pport,
         blob = req
     }
+    if not req then
+        self:report('dna.server.await')
+    else
+        self:report('dna.server.accept', request)
+    end
+    return request
 end
 
 --- DnaServer:request() - Responds the current request
 -- @param response Response object
 function DnaServer:respond(response)
     if response then
-        self.conn:sendto(response.blob, response.host, response.port)
+        self:report('dna.server.touch', response)
+        local state, fault = DnaServerSocket:sendto(response.blob, response.host, response.port)
+        if not state then
+            response.reason = fault
+            self:report('dna.server.touch.fail', response)
+        else
+            self:report('dna.server.touch.done', response)
+        end
+    end
+end
+
+--- DnaServer:report() - Reports event
+-- @param event Active event name
+-- @param context Table of context information
+function DnaServer:report(event, context)
+    if self.hq then
+        self.hq:fire(event, context)
     end
 end
 
