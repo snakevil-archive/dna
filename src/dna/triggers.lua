@@ -34,25 +34,25 @@ return function (DNA)
     --- DNA.triggers['dna.agent.setup.fail']() - Handles 'dna.agent.setup.fail' event
     -- @param context Table of event context
     DNA.triggers['dna.agent.setup.fail'] = function (context)
-        DNA.log('@DnaAgent#' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ': ' .. context.reason, nil, DNA.log.error)
+        DNA.log('@DnaAgent-' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ': ' .. context.reason, nil, DNA.log.error)
     end
 
     --- DNA.triggers['dna.agent.query']() - Handles 'dna.agent.query' event
     -- @param context Table of event context
     DNA.triggers['dna.agent.query'] = function (context)
-        DNA.log('@DnaAgent#' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ': send ' .. #context.query .. ' bytes')
+        DNA.log('@DnaAgent-' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ': #' .. 1 + context.agent.counter .. ' send ' .. #context.query .. ' bytes')
     end
 
     --- DNA.triggers['dna.agent.query.fail']() - Handles 'dna.agent.query.fail' event
     -- @param context Table of event context
     DNA.triggers['dna.agent.query.fail'] = function (context)
-        DNA.log('@DnaAgent#' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ': connection ' .. context.reason, nil, DNA.log.error)
+        DNA.log('@DnaAgent-' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ': connection ' .. context.reason, nil, DNA.log.error)
     end
 
     --- DNA.triggers['dna.agent.query.done']() - Handles 'dna.agent.query.done' event
     -- @param context Table of event context
     DNA.triggers['dna.agent.query.done'] = function (context)
-        DNA.log('@DnaAgent#' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ': receive ' .. #context.result .. ' bytes')
+        DNA.log('@DnaAgent-' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ': #' .. 1 + context.agent.counter .. ' receive ' .. #context.result .. ' bytes')
     end
 
     --- DNA.triggers['dna.server.touch']() - Handles 'dna.server.touch' event

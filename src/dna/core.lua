@@ -113,7 +113,7 @@ end
 -- @param listener Event listener
 -- @return DNaAgent object
 function DNA.agent(listener)
-    local index, worker
+    local index, worker, counter
     if not DnaAgents then
         DnaAgents = {}
         for index in ipairs(DnaConfig.upstreams) do
@@ -126,9 +126,8 @@ function DNA.agent(listener)
             )
         end
     end
-    local counter = -1
     for index in ipairs(DnaAgents) do
-        if DnaAgents[index].counter > counter then
+        if not counter or DnaAgents[index].counter < counter then
             worker = DnaAgents[index]
             counter = worker.counter
         end
