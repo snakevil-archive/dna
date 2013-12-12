@@ -4,6 +4,8 @@ pcall(function ()
     require 'luarocks.loader'
 end)
 
-package.path = package.path .. string.gsub(arg[0], '(.*/).*', ';%1?.lua')
+if 0 ~= select(-1, arg[0]:gsub('^(.*/).*$', '')) then
+    package.path = package.path .. arg[0]:gsub('^(.*/).*$', ';%1?.lua')
+end
 
 require('dna.core')()
