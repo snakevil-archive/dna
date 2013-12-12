@@ -46,15 +46,21 @@ local DNA = setmetatable({
                     end
                 end
             end
-            DNA.log = require('dna.log')(DnaConfig.log.path, DnaConfig.log.level)
-            local listener = require('dna.listener')(DNA.triggers, DNA):fire('dna.setup')
-            local server = DNA.server(listener)
-            repeat
-                DNA.agent(listener):appease(server:request())
-            until nil
-            listener:fire('dna.shutdown', server)
+            local listener = require('dna.listener')(DNA.triggers, require('dna.logger')(DnaConfig.log.path, DnaConfig.log.level))
+            DNA.serve(listener)
         end
     })
+
+--- DNA.serve() - Serves as a daemon
+-- @param listener Event listener
+function DNA.serve(listener)
+    listener:fire('dna.setup')
+    local server = DNA.server(listener)
+    repeat
+        DNA.agent(listener):appease(server:request())
+    until nil
+    listener:fire('dna.shutdown', server)
+end
 
 --- DNA.server() - Retrieves the only server
 -- @param listener Event listener

@@ -1,3 +1,5 @@
+local DnaListenerEvent, DnaListenerTimes = '', 0
+
 local DnaListener = {}
 DnaListener.__index = DnaListener
 
@@ -31,29 +33,28 @@ function DnaListener.new(events, debugger)
     return self
 end
 
-local rname, rcounter = '', 0
 --- DnaListener:fire() - Fires an event
 -- @param event Name of the active event
 -- @param context Table of context informations
 function DnaListener:fire(event, context)
     if self.debugger then
-        if rname == event then
-            rcounter = 1 + rcounter
+        if DnaListenerEvent == event then
+            DnaListenerTimes = 1 + DnaListenerTimes
         else
-            rname = event
-            rcounter = 1
+            DnaListenerEvent = event
+            DnaListenerTimes = 1
         end
-        if 4 > rcounter then
-            self.debugger.log('@DnaListener: ' .. event, nil, self.debugger.log.debug)
-            if 3 == rcounter then
-                self.debugger.log('@DnaListener: (ignore duplicates)', nil, self.debugger.log.debug)
+        if 4 > DnaListenerTimes then
+            self.debugger.log('@DnaListener: ' .. event, nil, self.debugger.log.DEBUG)
+            if 3 == DnaListenerTimes then
+                self.debugger.log('@DnaListener: (ignore duplicates)', nil, self.debugger.log.DEBUG)
             end
         end
     end
     if self.events[event] then
         local i, handler
         for i, handler in ipairs(self.events[event]) do
-            handler(context)
+            handler(context, self.debugger)
         end
     end
     return self
