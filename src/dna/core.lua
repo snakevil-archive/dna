@@ -25,46 +25,6 @@ local DNA = setmetatable({
         _VERSION = 'DNA 0.0.1-alpha',
         host = DnaConfig.host,
         port = DnaConfig.port,
-        log = setmetatable({
-            debug = 0,
-            notice = 1,
-            warning = 2,
-            error = 3
-        }, {
-            --- DNA.log() - Logs messages
-            -- @param message What to be logged
-            -- @param level Priority of the message
-            -- @param inline Whether append a newline automatically
-            __call = function (log, message, inline, level)
-                if not level then
-                    level = log.notice
-                end
-                if inline then
-                    inline = ''
-                else
-                    inline = "\n"
-                end
-                local out, header
-                if not DnaConfig.log.level then
-                    DnaConfig.log.level = 'notice'
-                end
-                if 'stderr' == DnaConfig.log.path or 'stdout' == DnaConfig.log.path then
-                    out = io.output(io[DnaConfig.log.path])
-                end
-                if log.debug == level then
-                    header = '  [DEBUG] '
-                elseif log.notice == level then
-                    header = ' [NOTICE] '
-                elseif log.warning == level then
-                    header = '[WARNING] '
-                elseif log.error == level then
-                    header = '[-ERROR-] '
-                end
-                if level >= log[DnaConfig.log.level] then
-                    out:write(header .. message .. inline)
-                end
-            end
-        }),
         triggers = {}
     }, {
         --- DNA() - Configs and runs
@@ -86,6 +46,7 @@ local DNA = setmetatable({
                     end
                 end
             end
+            DNA.log = require('dna.log')(DnaConfig.log.path, DnaConfig.log.level)
             local listener = require('dna.listener')(DNA.triggers, DNA):fire('dna.setup')
             local server = DNA.server(listener)
             repeat
