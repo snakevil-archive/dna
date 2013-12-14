@@ -1,53 +1,39 @@
 local DnaServer, DnaAgents
 
-local DnaConfig = {
-    host = '127.0.0.1',
-    port = 53,
-    mode = 'tcp',
-    timeout = 3,
-    upstreams = {
-        {
-            host = '8.8.8.8',
-            port = 53
-        },
-        {
-            host = '8.8.4.4',
-            port = 53
-        }
-    },
-    log = {
-        path = 'stderr',
-        level = 'notice'
-    }
-}
-
 local DNA = setmetatable({
-        _VERSION = 'DNA 0.0.1-alpha',
-        host = DnaConfig.host,
-        port = DnaConfig.port
+        _VERSION = 'DNA 0.0.1-alpha'
     }, {
         --- DNA() - Configs and runs
         -- @param ... Runtime options
         -- @return self object
         __call = function (DNA, ...)
-            local triggers = require('dna.triggers')
-            local key, value
-            if 'table' == type(config) then
-                for key, value in pairs(config) do
-                    if 'log' ~= key then
-                        DnaConfig[key] = value
-                        if 'host' == key or 'port' == key then
-                            DNA[key] = value
-                        end
-                    elseif config.log.path then
-                        DnaConfig.log.path = config.log.path
-                    elseif config.log.level then
-                        DnaConfig.log.level = config.log.level
-                    end
-                end
+            local triggers, config = require('dna.triggers'), require('dna.config')({
+                host = '127.0.0.1',
+                port = 53,
+                mode = 'tcp',
+                timeout = 3,
+                upstreams = {
+                    {
+                        host = '8.8.8.8',
+                        port = 53
+                    },
+                    {
+                        host = '8.8.4.4',
+                        port = 53
+                    }
+                },
+                log = {
+                    path = 'stderr',
+                    level = 'notice'
+                }
+            }, ... )
+            if 'help' == config then
+                DNA.help(require('dna.listener')(triggers, require('dna.logger')('stderr', 'emergency')))
+            elseif 'version' == config then
+                DNA.version(require('dna.listener')(triggers, require('dna.logger')('stderr', 'emergency')))
+            elseif 'table' ==type(config) then
+                DNA.serve(config, require('dna.listener')(triggers, require('dna.logger')(config.log.path, config.log.level)))
             end
-            local listener = require('dna.listener')(triggers, require('dna.logger')(DnaConfig.log.path, DnaConfig.log.level))
-            DNA.serve(listener)
         end
     })
 
@@ -62,24 +48,29 @@ function DNA.version(listener)
 end
 
 --- DNA.serve() - Serves as a daemon
+-- @param config Table of configs
 -- @param listener Event listener
-function DNA.serve(listener)
-    listener:fire('dna.setup', DNA)
-    local server = DNA.server(listener)
+function DNA.serve(config, listener)
+    listener:fire('dna.setup', {
+        DNA = DNA,
+        config = config
+    })
+    local server = DNA.server(config, listener)
     repeat
-        DNA.agent(listener):appease(server:request())
+        DNA.agent(config, listener):appease(server:request())
     until nil
     listener:fire('dna.shutdown', server)
 end
 
 --- DNA.server() - Retrieves the only server
+-- @param config Table of configs
 -- @param listener Event listener
 -- @return DnaServer object
-function DNA.server(listener)
+function DNA.server(config, listener)
     if not DnaServer then
         DnaServer = require('dna.server')(
-            DNA.host,
-            DNA.port,
+            config.host,
+            config.port,
             listener
         )
     end
@@ -87,18 +78,19 @@ function DNA.server(listener)
 end
 
 --- DNA.agent() - Picks a random agent
+-- @param config Table of configs
 -- @param listener Event listener
 -- @return DNaAgent object
-function DNA.agent(listener)
+function DNA.agent(cofnig, listener)
     local index, worker, counter
     if not DnaAgents then
         DnaAgents = {}
-        for index in ipairs(DnaConfig.upstreams) do
+        for index in ipairs(config.upstreams) do
             DnaAgents[index] = require('dna.agent')(
-                DnaConfig.upstreams[index].host,
-                DnaConfig.upstreams[index].port,
-                DnaConfig.mode,
-                DnaConfig.timeout,
+                config.upstreams[index].host,
+                config.upstreams[index].port,
+                config.mode,
+                config.timeout,
                 listener
             )
         end

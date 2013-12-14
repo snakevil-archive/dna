@@ -1,7 +1,7 @@
 local DNSHosts, out = {}, io.stdout
 
 --- version() - Prints the version
-    -- @param DNA object
+-- @param DNA object
 local function version(DNA)
     xpcall(function ()
         out:write(DNA._VERSION, ' (', _VERSION, ', ', require('socket')._VERSION, ")\n")
@@ -36,18 +36,18 @@ return {
     ['dna.help'] = function (DNA, debugger)
         version(DNA)
         out:write([=[
-Usages: dna [OPTIONS] [--] gateway
+Usage: dna [OPTIONS] [--] gateway
 Serve as a DNSd (proxy) to maintain routes automatically.
 
 Mandatory arguments to long options are mandatory for short options too.
 
-  -d, --debug                   run in debug mode (log completely), conflict
+  -D, --debug                   run in debug mode (log completely), conflict
                                 with '--quiet' '--silence' and '--verbose'
   -E, --stderr                  log to STDERR
   -G, --google                  aka '-u 8.8.8.8 -u 8.8.4.4', conflict
                                 with '--upstream' '--server' and '--opendns'
   -h, --host=HOST               HOST to listen on, default: *
-  -l, --log[=FILE]              FILE to log, the STDERR would be used on omitted
+  -l, --log=FILE                FILE to log
   -L, --local                   aka '-h 127.0.0.1'
   -m, --mode=MODE               MODE to communicate remote servers,
                                 'tcp' or 'udp', default: tcp
@@ -84,10 +84,34 @@ Mandatory arguments to long options are mandatory for short options too.
     end,
 
     --- DNA.triggers['dna.setup']() - Handles 'dna.setup' event
-    -- @param DNA object
+    -- @param context Table of event context
     -- @param debugger DnaLogger object
-    ['dna.setup'] = function (DNA, debugger)
-        version(DNA)
+    ['dna.setup'] = function (context, debugger)
+        version(context.DNA)
+
+        local key, value
+
+        local dump = coroutine.wrap(function ()
+            local yield = coroutine.yield
+            local key, value
+            for key, value in pairs(context.config) do
+                if 'upstreams' == key then
+                    for key = 1, #value do
+                        yield('upstreams.' .. key, value[key]['host'] .. '.' .. value[key]['port'])
+                    end
+                elseif 'log' == key then
+                    for key, value in pairs(value) do
+                        yield('log.' .. key, value)
+                    end
+                else
+                    yield(key, value)
+                end
+            end
+        end)
+
+        for key, value in dump do
+            debugger.log('@config: ' .. key .. ' = ' .. value, nil, debugger.log.DEBUG)
+        end
     end,
 
     --- DNA.triggers['dna.server.setup.fail']() - Handles 'dna.server.setup.fail' event
