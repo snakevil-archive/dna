@@ -42,7 +42,7 @@ Serve as a DNSd (proxy) to maintain routes automatically.
 Mandatory arguments to long options are mandatory for short options too.
 
   -c, --cache=SECS              seconds to cache queries, 0 means disable
-                                caching, deafult: 0
+                                caching, deafult: 600
   -D, --debug                   run in debug mode (log completely), conflict
                                 with '--quiet' '--silence' and '--verbose'
   -E, --stderr                  log to STDERR

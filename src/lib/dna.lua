@@ -17,7 +17,7 @@ local DNA = setmetatable({
                     path = 'stderr',
                     level = 'notice'
                 },
-                cache = 0
+                cache = 600
             }, ... )
             if 0 == #config.upstreams then
                 config.upstreams = {
