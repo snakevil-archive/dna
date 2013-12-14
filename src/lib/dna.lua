@@ -59,7 +59,7 @@ function DNA.serve(config, listener)
         DNA = DNA,
         config = config
     })
-    local server = DNA.server(config, listener)
+    local server = DNA.server(config, require('dna.route')(config.gateway, listener))
     repeat
         DNA.agent(config, listener):appease(DNA.cache(config, listener):hit(server:request()))
     until nil
