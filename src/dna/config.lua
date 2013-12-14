@@ -1,6 +1,7 @@
 return function (config, ... )
     local DnaGetopt, out = require('dna.getopt'), io.stderr
     local options, optype = {
+        cache = DnaGetopt.REQUIRED,
         debug = DnaGetopt.ALONE,
         stderr = DnaGetopt.ALONE,
         google = DnaGetopt.ALONE,
@@ -24,8 +25,10 @@ return function (config, ... )
         version = DnaGetopt.ALONE
     }, 'config'
     local option, value
-    for option, value in DnaGetopt(arg, 'DEGh:l:Lm:Op:sSTu:Uvw:V', options) do
-        if 'D' == option or 'debug' == option then
+    for option, value in DnaGetopt(arg, 'c:DEGh:l:Lm:Op:sSTu:Uvw:V', options) do
+        if 'c' == option or 'cache' == option then
+            config.cache = value
+        elseif 'D' == option or 'debug' == option then
             config.log.level = 'debug'
         elseif 'E' == option or 'stderr' == option then
             config.log.path = 'stderr'

@@ -11,6 +11,7 @@ setmetatable(DnaServer, {
         return server.new(...)
     end
 })
+
 --- DnaServer.new() - Creates a server
 -- @param host Address to bind
 -- @param port Port to listen
@@ -63,14 +64,15 @@ function DnaServer:request()
     local request = {
         server = self,
         host = phost,
-        port = pport,
-        blob = req
+        port = pport
     }
     if not req then
         self:report('dna.server.await', {
             timeout = LuaSocketTimeout
         })
     else
+        request.blob = req
+        request.domain = req:sub(14, -5):gsub('[' .. string.char(3, 6) .. ']', '.')
         self:report('dna.server.accept', request)
     end
     return request

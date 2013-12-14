@@ -1,4 +1,4 @@
-local DnaServer, DnaAgents
+local DnaServer, DnaAgents, DnaCache
 
 local DNA = setmetatable({
         _VERSION = 'DNA 0.0.1-alpha'
@@ -16,7 +16,8 @@ local DNA = setmetatable({
                 log = {
                     path = 'stderr',
                     level = 'notice'
-                }
+                },
+                cache = 0
             }, ... )
             if 0 == #config.upstreams then
                 config.upstreams = {
@@ -60,7 +61,7 @@ function DNA.serve(config, listener)
     })
     local server = DNA.server(config, listener)
     repeat
-        DNA.agent(config, listener):appease(server:request())
+        DNA.agent(config, listener):appease(DNA.cache(config, listener):hit(server:request()))
     until nil
     listener:fire('dna.shutdown', server)
 end
@@ -71,11 +72,7 @@ end
 -- @return DnaServer object
 function DNA.server(config, listener)
     if not DnaServer then
-        DnaServer = require('dna.server')(
-            config.host,
-            config.port,
-            listener
-        )
+        DnaServer = require('dna.server')(config.host, config.port, listener)
     end
     return DnaServer
 end
@@ -88,23 +85,28 @@ function DNA.agent(config, listener)
     local index, worker, counter
     if not DnaAgents then
         DnaAgents = {}
-        for index in ipairs(config.upstreams) do
-            DnaAgents[index] = require('dna.agent')(
-                config.upstreams[index].host,
-                config.upstreams[index].port,
-                config.mode,
-                config.timeout,
-                listener
-            )
+        for index = 1, #config.upstreams do
+            DnaAgents[index] = require('dna.agent')(config.upstreams[index].host, config.upstreams[index].port, config.mode, config.timeout, listener)
         end
     end
-    for index in ipairs(DnaAgents) do
+    for index = 1, #DnaAgents do
         if not counter or DnaAgents[index].counter < counter then
             worker = DnaAgents[index]
             counter = worker.counter
         end
     end
     return worker
+end
+
+--- DNA.cache() - Retrieves the cache object
+-- @param config Table of configs
+-- @param listener Event listener
+-- @return DnaCache object
+function DNA.cache(config, listener)
+    if not DnaCache then
+        DnaCache = require('dna.cache')(config.cache, listener)
+    end
+    return DnaCache
 end
 
 return DNA

@@ -82,7 +82,7 @@ end
 -- @param query Query blob
 -- @return Result blob
 function DnaAgent:tcp(query)
-    local state, fault, partial
+    local state, fault, prefix, size
     if not DnaAgentSocket then
         DnaAgentSocket, fault = LuaSocket.connect(self.host, self.port)
         if not DnaAgentSocket then
@@ -111,8 +111,8 @@ function DnaAgent:tcp(query)
         })
         return
     end
-    state, fault, partial = DnaAgentSocket:receive(2)
-    if not state then
+    prefix, fault = DnaAgentSocket:receive(2)
+    if not prefix then
         if 'closed' == fault then
             DnaAgentSocket:close()
             DnaAgentSocket = nil
@@ -125,10 +125,9 @@ function DnaAgent:tcp(query)
         })
         return
     end
-    state, partial = state:byte(1, -1)
-    partial = 256 * state + partial
-    state, fault = DnaAgentSocket:receive(partial)
-    if not state or partial ~= #state then
+    size = 256 * prefix:byte() + prefix:byte(2)
+    state, fault = DnaAgentSocket:receive(size)
+    if not state or size ~= #state then
         self:report('dna.agent.query.fail', {
             agent = self,
             query = query,
@@ -139,7 +138,7 @@ function DnaAgent:tcp(query)
     self:report('dna.agent.query.done', {
         agent = self,
         query = query,
-        result = state
+        result = prefix .. state
     })
     return state
 end
@@ -198,11 +197,16 @@ function DnaAgent:appease(request)
     if 'table' ~= type(request) or not request.blob then
         return
     end
-    local response = {
+    local response, match, pattern = {
         host = request.host,
         port = request.port,
-        blob = self:query(request.blob)
-    }
+        domain = request.domain,
+        blob = self:query(request.blob),
+        records = {}
+    }, '', '\192.\0\1\0\1\0\0..\0\4....' -- 0xC0 .(unknown) 0x000100010000 ..(TTL) 0x0004 ....(IP)
+    for match in response.blob:gmatch(pattern) do
+        response.records[1 + #response.records] = string.format('%d.%d.%d.%d', match:byte(-4, -1))
+    end
     self.counter = 1 + self.counter
     if response.blob and #response.blob then
         return request.server:respond(response)

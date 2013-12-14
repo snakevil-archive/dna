@@ -1,4 +1,4 @@
-local DNSHosts, out = {}, io.stdout
+local out = io.stdout
 
 --- version() - Prints the version
 -- @param DNA object
@@ -41,6 +41,8 @@ Serve as a DNSd (proxy) to maintain routes automatically.
 
 Mandatory arguments to long options are mandatory for short options too.
 
+  -c, --cache=SECS              seconds to cache queries, 0 means disable
+                                caching, deafult: 0
   -D, --debug                   run in debug mode (log completely), conflict
                                 with '--quiet' '--silence' and '--verbose'
   -E, --stderr                  log to STDERR
@@ -114,6 +116,14 @@ Mandatory arguments to long options are mandatory for short options too.
         end
     end,
 
+    --- DNA.triggers['dna.shutdown']() - Handles 'dna.shutdown' event
+    -- @param server DnaServer object
+    -- @param debugger DnaLogger object
+    ['dna.shutdown'] = function (server, debugger)
+        server:shutdown()
+        out:write(": bye!\n")
+    end,
+
     --- DNA.triggers['dna.server.setup.fail']() - Handles 'dna.server.setup.fail' event
     -- @param context Table of event context
     -- @param debugger DnaLogger object
@@ -128,19 +138,32 @@ Mandatory arguments to long options are mandatory for short options too.
         out:write(' listening on ', server.host, '.', server.port, "\n")
     end,
 
+    --- DNA.triggers['dna.server.touch.fail']() - Handles 'dna.server.touch.fail' event
+    -- @param context Table of event context
+    -- @param debugger DnaLogger object
+    ['dna.server.touch.fail'] = function (context, debugger)
+        debugger.log(context.host .. '.' .. context.port .. ': ' .. context.reason, nil, debugger.log.ERROR)
+    end,
+
+    --- DNA.triggers['dna.server.touch.done']() - Handles 'dna.server.touch.done' event
+    -- @param response Response object
+    -- @param debugger DnaLogger object
+    ['dna.server.touch.done'] = function (response, debugger)
+        debugger.log(response.host .. '.' .. response.port .. ': got ' .. #response.records .. ' records', nil, debugger.log.NOTICE)
+    end,
+
     --- DNA.triggers['dna.server.accept']() - Handles 'dna.server.accept' event
     -- @param request Request object
     -- @param debugger DnaLogger object
     ['dna.server.accept'] = function (request, debugger)
-        local domain = request.blob:sub(14, -5):gsub('[' .. string.char(3, 6) .. ']', '.')
-        debugger.log(request.host .. '.' .. request.port .. ': query \'' .. domain .. '\'', nil, debugger.log.NOTICE)
+        debugger.log(request.host .. '.' .. request.port .. ': query \'' .. request.domain .. '\'', nil, debugger.log.NOTICE)
     end,
 
     --- DNA.triggers['dna.agent.setup']() - Handles 'dna.agent.setup' event
     -- @param agent DnaAgent object
     -- @param debugger DnaLogger object
     ['dna.agent.setup'] = function (agent, debugger)
-        debugger.log('@agent: prepare ' .. agent.host .. '.' .. agent.port .. '#' .. agent.mode .. ' ' .. agent.timeout .. 's', nil, debugger.log.INFO)
+        debugger.log('@agent: prepare ' .. agent.host .. '.' .. agent.port .. '#' .. agent.mode .. ' (' .. agent.timeout .. ' seconds)', nil, debugger.log.INFO)
     end,
 
     --- DNA.triggers['dna.agent.setup.fail']() - Handles 'dna.agent.setup.fail' event
@@ -182,37 +205,18 @@ Mandatory arguments to long options are mandatory for short options too.
         debugger.log('@agent: ' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ' #' .. 1 + context.agent.counter .. ' receive ' .. #context.result .. ' bytes', nil, debugger.log.INFO)
     end,
 
-    --- DNA.triggers['dna.server.touch']() - Handles 'dna.server.touch' event
-    -- @param response Response object
+    --- DNA.triggers['dna.cache.setup']() - Handles 'dna.cache.setup' event
+    -- @param cache DnaCache object
     -- @param debugger DnaLogger object
-    ['dna.server.touch'] = function (response, debugger)
-        local match, pattern = '', '\192.\0\1\0\1\0\0..\0\4....' -- 0xC0 .(unknown) 0x000100010000 ..(TTL) 0x0004 ....(IP)
-        DNSHosts = {}
-        for match in response.blob:gmatch(pattern) do
-            DNSHosts[1 + #DNSHosts] = string.format('%d.%d.%d.%d', match:byte(-4, -1))
-        end
+    ['dna.cache.setup'] = function (cache, debugger)
+        debugger.log('@cache: keep ' .. cache.lifetime .. ' seconds', nil, debugger.log.INFO)
     end,
 
-    --- DNA.triggers['dna.server.touch.fail']() - Handles 'dna.server.touch.fail' event
+    --- DNA.triggers['dna.cache.hit']() - Handles 'dna.cache.hit' event
     -- @param context Table of event context
     -- @param debugger DnaLogger object
-    ['dna.server.touch.fail'] = function (context, debugger)
-        debugger.log(context.host .. '.' .. context.port .. ': ' .. context.reason, nil, debugger.log.ERROR)
-    end,
-
-    --- DNA.triggers['dna.server.touch.done']() - Handles 'dna.server.touch.done' event
-    -- @param response Response object
-    -- @param debugger DnaLogger object
-    ['dna.server.touch.done'] = function (response, debugger)
-        debugger.log(response.host .. '.' .. response.port .. ': got ' .. #DNSHosts .. ' records', nil, debugger.log.NOTICE)
-    end,
-
-    --- DNA.triggers['dna.shutdown']() - Handles 'dna.shutdown' event
-    -- @param server DnaServer object
-    -- @param debugger DnaLogger object
-    ['dna.shutdown'] = function (server, debugger)
-        server:shutdown()
-        out:write(": bye!\n")
+    ['dna.cache.hit'] = function (context, debugger)
+        debugger.log('@cache: hit before ' .. os.date('%b %e, %y at %T', context.expiration), nil, debugger.log.INFO)
     end
 
 }
