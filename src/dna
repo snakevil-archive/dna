@@ -5,7 +5,7 @@ pcall(function ()
 end)
 
 if 0 ~= select(-1, arg[0]:gsub('^(.*/).*$', '')) then
-    package.path = package.path .. arg[0]:gsub('^(.*/).*$', ';%1?.lua')
+    package.path = package.path .. arg[0]:gsub('^(.*/).*$', ';%1lib/?.lua')
 end
 
-require('dna.core')(...)
+require('dna')(...)

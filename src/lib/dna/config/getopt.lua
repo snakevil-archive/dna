@@ -1,9 +1,9 @@
-local DnaGetopt = setmetatable({
+local DnaConfigGetopt = setmetatable({
     ALONE = '',
     OPTIONAL = '?',
     REQUIRED = ':'
 }, {
-    --- DnaGetopt() - Gets options
+    --- DnaConfigGetopt() - Gets options
     -- @param args Arguments passed in command line
     -- @param shorts String of short options like 'getopt (3)' in ANSI C
     -- @param longs Table of long options
@@ -106,4 +106,4 @@ local DnaGetopt = setmetatable({
     end
 })
 
-return DnaGetopt
+return DnaConfigGetopt

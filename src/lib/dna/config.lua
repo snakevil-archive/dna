@@ -1,5 +1,5 @@
 return function (config, ... )
-    local DnaGetopt, out = require('dna.getopt'), io.stderr
+    local DnaGetopt, out = require('dna.config.getopt'), io.stderr
     local options, optype = {
         cache = DnaGetopt.REQUIRED,
         debug = DnaGetopt.ALONE,
