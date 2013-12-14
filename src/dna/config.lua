@@ -24,7 +24,7 @@ return function (config, ... )
         version = DnaGetopt.ALONE
     }, 'config'
     local option, value
-    for option, value in DnaGetopt(arg, 'DEGh:l:Lm:Op:sSTu:UvwV', options) do
+    for option, value in DnaGetopt(arg, 'DEGh:l:Lm:Op:sSTu:Uvw:V', options) do
         if 'D' == option or 'debug' == option then
             config.log.level = 'debug'
         elseif 'E' == option or 'stderr' == option then

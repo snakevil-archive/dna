@@ -52,13 +52,15 @@ function DnaAgent.new(host, port, mode, timeout, listener)
     elseif 'number' ~= type(timeout) then
         timeout = tonumber(timeout)
     end
-    return setmetatable({
+    local self = setmetatable({
         host = host,
         port = port,
         mode = mode,
         timeout = timeout,
         counter = 0
     }, DnaAgent):addListener(listener)
+    self:report('dna.agent.setup', self)
+    return self
 end
 
 --- DnaAgent:query() - Communicates the remote name server
@@ -81,18 +83,21 @@ end
 -- @return Result blob
 function DnaAgent:tcp(query)
     local state, fault, partial
-    self:report('dna.agent.setup', self)
-    DnaAgentSocket, fault = LuaSocket.connect(self.host, self.port)
     if not DnaAgentSocket then
-        self:report('dna.agent.setup.fail', {
-            agent = self,
-            reason = fault
-        })
-        return
+        DnaAgentSocket, fault = LuaSocket.connect(self.host, self.port)
+        if not DnaAgentSocket then
+            self:report('dna.agent.setup.fail', {
+                agent = self,
+                reason = fault
+            })
+            return
+        end
+        DnaAgentSocket:settimeout(self.timeout)
+        DnaAgentSocket:setoption('keepalive', true)
+        DnaAgentSocket:setoption('tcp-nodelay', true)
+        self:report('dna.agent.setup.done', self)
     end
-    self:report('dna.agent.setup.done', self)
-    DnaAgentSocket:settimeout(0)
-    query = string.char(0, 28) .. query .. "\n"
+    query = string.char(0, #query) .. query
     self:report('dna.agent.query', {
         agent = self,
         query = query
@@ -106,10 +111,24 @@ function DnaAgent:tcp(query)
         })
         return
     end
-    DnaAgentSocket:shutdown('send')
-    local sockets = LuaSocket.select({DnaAgentSocket}, {})
-    state, fault, partial = sockets[1]:receive('*a')
-    if not state and 0 == #partial then
+    state, fault, partial = DnaAgentSocket:receive(2)
+    if not state then
+        if 'closed' == fault then
+            DnaAgentSocket:close()
+            DnaAgentSocket = nil
+            return self:tcp(query:sub(3))
+        end
+        self:report('dna.agent.query.fail', {
+            agent = self,
+            query = query,
+            reason = fault
+        })
+        return
+    end
+    state, partial = state:byte(1, -1)
+    partial = 256 * state + partial
+    state, fault = DnaAgentSocket:receive(partial)
+    if not state or partial ~= #state then
         self:report('dna.agent.query.fail', {
             agent = self,
             query = query,
@@ -120,9 +139,9 @@ function DnaAgent:tcp(query)
     self:report('dna.agent.query.done', {
         agent = self,
         query = query,
-        result = partial
+        result = state
     })
-    return partial:sub(3)
+    return state
 end
 
 --- DnaAgent:udp() - Communicates in UDP
@@ -130,10 +149,8 @@ end
 -- @return Result blob
 function DnaAgent:udp(query)
     local state, fault
-    if 0 == self.counter then
-        self:report('dna.agent.setup', self)
+    if not DnaAgentSocket then
         DnaAgentSocket = LuaSocket.udp()
-        DnaAgentSocket:settimeout(self.timeout)
         state, fault = DnaAgentSocket:setpeername(self.host, self.port)
         if not state then
             self:report('dna.agent.setup.fail', {
@@ -142,6 +159,7 @@ function DnaAgent:udp(query)
             })
             return
         end
+        DnaAgentSocket:settimeout(self.timeout)
         self:report('dna.agent.setup.done', self)
     end
     self:report('dna.agent.query', {

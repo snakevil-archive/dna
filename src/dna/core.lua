@@ -12,21 +12,24 @@ local DNA = setmetatable({
                 port = 53,
                 mode = 'tcp',
                 timeout = 3,
-                upstreams = {
-                    {
-                        host = '8.8.8.8',
-                        port = 53
-                    },
-                    {
-                        host = '8.8.4.4',
-                        port = 53
-                    }
-                },
+                upstreams = {},
                 log = {
                     path = 'stderr',
                     level = 'notice'
                 }
             }, ... )
+            if 0 == #config.upstreams then
+                config.upstreams = {
+                    {
+                        host = '8.8.4.4',
+                        port = 53
+                    },
+                    {
+                        host = '8.8.8.8',
+                        port = 53
+                    }
+                }
+            end
             if 'help' == config then
                 DNA.help(require('dna.listener')(triggers, require('dna.logger')('stderr', 'emergency')))
             elseif 'version' == config then
@@ -81,7 +84,7 @@ end
 -- @param config Table of configs
 -- @param listener Event listener
 -- @return DNaAgent object
-function DNA.agent(cofnig, listener)
+function DNA.agent(config, listener)
     local index, worker, counter
     if not DnaAgents then
         DnaAgents = {}

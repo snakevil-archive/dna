@@ -110,7 +110,7 @@ Mandatory arguments to long options are mandatory for short options too.
         end)
 
         for key, value in dump do
-            debugger.log('@config: ' .. key .. ' = ' .. value, nil, debugger.log.DEBUG)
+            debugger.log('@config: ' .. key .. ' = ' .. value, nil, debugger.log.INFO)
         end
     end,
 
@@ -122,7 +122,7 @@ Mandatory arguments to long options are mandatory for short options too.
     end,
 
     --- DNA.triggers['dna.server.setup.done']() - Handles 'dna.server.setup.done' event
-    -- @param server DnsServer object
+    -- @param server DnaServer object
     -- @param debugger DnaLogger object
     ['dna.server.setup.done'] = function (server, debugger)
         out:write(' listening on ', server.host, '.', server.port, "\n")
@@ -136,32 +136,50 @@ Mandatory arguments to long options are mandatory for short options too.
         debugger.log(request.host .. '.' .. request.port .. ': query \'' .. domain .. '\'', nil, debugger.log.NOTICE)
     end,
 
+    --- DNA.triggers['dna.agent.setup']() - Handles 'dna.agent.setup' event
+    -- @param agent DnaAgent object
+    -- @param debugger DnaLogger object
+    ['dna.agent.setup'] = function (agent, debugger)
+        debugger.log('@agent: prepare ' .. agent.host .. '.' .. agent.port .. '#' .. agent.mode .. ' ' .. agent.timeout .. 's', nil, debugger.log.INFO)
+    end,
+
     --- DNA.triggers['dna.agent.setup.fail']() - Handles 'dna.agent.setup.fail' event
     -- @param context Table of event context
     -- @param debugger DnaLogger object
     ['dna.agent.setup.fail'] = function (context, debugger)
-        debugger.log('@DnaAgent-' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ': ' .. context.reason, nil, debugger.log.ALERT)
+        debugger.log('@agent: ' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ' ' .. context.reason, nil, debugger.log.ALERT)
+    end,
+
+    --- DNA.triggers['dna.agent.setup.done']() - Handles 'dna.agent.setup.done' event
+    -- @param agent DnaAgent object
+    -- @param debugger DnaLogger object
+    ['dna.agent.setup.done'] = function (agent, debugger)
+        local conn = 'connected'
+        if 0 < agent.counter then
+            conn = 're-' .. conn
+        end
+        debugger.log('@agent: ' .. agent.host .. '.' .. agent.port .. '#' .. agent.mode .. ' ' .. conn, nil, debugger.log.INFO)
     end,
 
     --- DNA.triggers['dna.agent.query']() - Handles 'dna.agent.query' event
     -- @param context Table of event context
     -- @param debugger DnaLogger object
     ['dna.agent.query'] = function (context, debugger)
-        debugger.log('@DnaAgent-' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ': #' .. 1 + context.agent.counter .. ' send ' .. #context.query .. ' bytes', nil, debugger.log.INFO)
+        debugger.log('@agent: ' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ' #' .. 1 + context.agent.counter .. ' send ' .. #context.query .. ' bytes', nil, debugger.log.INFO)
     end,
 
     --- DNA.triggers['dna.agent.query.fail']() - Handles 'dna.agent.query.fail' event
     -- @param context Table of event context
     -- @param debugger DnaLogger object
     ['dna.agent.query.fail'] = function (context, debugger)
-        debugger.log('@DnaAgent-' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ': connection ' .. context.reason, nil, debugger.log.ERROR)
+        debugger.log('@agent: ' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ' connection ' .. context.reason, nil, debugger.log.ERROR)
     end,
 
     --- DNA.triggers['dna.agent.query.done']() - Handles 'dna.agent.query.done' event
     -- @param context Table of event context
     -- @param debugger DnaLogger object
     ['dna.agent.query.done'] = function (context, debugger)
-        debugger.log('@DnaAgent-' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ': #' .. 1 + context.agent.counter .. ' receive ' .. #context.result .. ' bytes', nil, debugger.log.INFO)
+        debugger.log('@agent: ' .. context.agent.host .. '.' .. context.agent.port .. '#' .. context.agent.mode .. ' #' .. 1 + context.agent.counter .. ' receive ' .. #context.result .. ' bytes', nil, debugger.log.INFO)
     end,
 
     --- DNA.triggers['dna.server.touch']() - Handles 'dna.server.touch' event
@@ -190,7 +208,7 @@ Mandatory arguments to long options are mandatory for short options too.
     end,
 
     --- DNA.triggers['dna.shutdown']() - Handles 'dna.shutdown' event
-    -- @param server DnsServer object
+    -- @param server DnaServer object
     -- @param debugger DnaLogger object
     ['dna.shutdown'] = function (server, debugger)
         server:shutdown()

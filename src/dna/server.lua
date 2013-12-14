@@ -1,4 +1,4 @@
-local LuaSocket = require('socket')
+local LuaSocket, LuaSocketTimeout = require('socket'), 60
 local DnaServerSocket
 
 local DnaServer = {}
@@ -33,7 +33,7 @@ function DnaServer.new(host, port, listener)
         port = port
     })
     DnaServerSocket = LuaSocket.udp()
-    DnaServerSocket:settimeout(60)
+    DnaServerSocket:settimeout(LuaSocketTimeout)
     local state, fault = DnaServerSocket:setsockname(host, port)
     if not state then
         self:report('dna.server.setup.fail', {
@@ -67,7 +67,9 @@ function DnaServer:request()
         blob = req
     }
     if not req then
-        self:report('dna.server.await')
+        self:report('dna.server.await', {
+            timeout = LuaSocketTimeout
+        })
     else
         self:report('dna.server.accept', request)
     end

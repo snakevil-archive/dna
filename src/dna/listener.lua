@@ -45,9 +45,9 @@ function DnaListener:fire(event, context)
             DnaListenerTimes = 1
         end
         if 4 > DnaListenerTimes then
-            self.debugger.log('@DnaListener: ' .. event, nil, self.debugger.log.DEBUG)
+            self.debugger.log('@listener: ' .. event, nil, self.debugger.log.DEBUG)
             if 3 == DnaListenerTimes then
-                self.debugger.log('@DnaListener: (ignore duplicates)', nil, self.debugger.log.DEBUG)
+                self.debugger.log('@listener: (ignore duplicates)', nil, self.debugger.log.DEBUG)
             end
         end
     end
