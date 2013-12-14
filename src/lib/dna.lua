@@ -1,7 +1,7 @@
 local DnaServer, DnaAgents, DnaCache
 
 local DNA = setmetatable({
-        _VERSION = 'DNA 0.0.1-alpha'
+        _VERSION = 'DNA 0.1.0-beta1'
     }, {
         --- DNA() - Configs and runs
         -- @param ... Runtime options
@@ -19,23 +19,23 @@ local DNA = setmetatable({
                 },
                 cache = 600
             }, ... )
-            if 0 == #config.upstreams then
-                config.upstreams = {
-                    {
-                        host = '8.8.4.4',
-                        port = 53
-                    },
-                    {
-                        host = '8.8.8.8',
-                        port = 53
-                    }
-                }
-            end
             if 'help' == config then
                 DNA.help(require('dna.listener')(triggers, require('dna.logger')('stderr', 'emergency')))
             elseif 'version' == config then
                 DNA.version(require('dna.listener')(triggers, require('dna.logger')('stderr', 'emergency')))
             elseif 'table' ==type(config) then
+                if 0 == #config.upstreams then
+                    config.upstreams = {
+                        {
+                            host = '8.8.4.4',
+                            port = 53
+                        },
+                        {
+                            host = '8.8.8.8',
+                            port = 53
+                        }
+                    }
+                end
                 DNA.serve(config, require('dna.listener')(triggers, require('dna.logger')(config.log.path, config.log.level)))
             end
         end
@@ -59,7 +59,13 @@ function DNA.serve(config, listener)
         DNA = DNA,
         config = config
     })
-    local server = DNA.server(config, require('dna.route')(config.gateway, listener))
+    local tunnel, index = {}, 0
+    if config.tunnel then
+        for index = 1, #config.upstreams do
+            tunnel[index] = config.upstreams[index].host
+        end
+    end
+    local server = DNA.server(config, require('dna.route')(config.gateway, tunnel, listener))
     repeat
         DNA.agent(config, listener):appease(DNA.cache(config, listener):hit(server:request()))
     until nil

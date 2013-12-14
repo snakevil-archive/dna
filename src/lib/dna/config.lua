@@ -1,31 +1,32 @@
 return function (config, ... )
-    local DnaGetopt, out = require('dna.config.getopt'), io.stderr
+    local DnaConfigGetopt, out = require('dna.config.getopt'), io.stderr
     local options, optype = {
-        cache = DnaGetopt.REQUIRED,
-        debug = DnaGetopt.ALONE,
-        stderr = DnaGetopt.ALONE,
-        google = DnaGetopt.ALONE,
-        host = DnaGetopt.REQUIRED,
-        log = DnaGetopt.REQUIRED,
-        ['local'] = DnaGetopt.ALONE,
-        mode = DnaGetopt.REQUIRED,
-        opendns = DnaGetopt.ALONE,
-        port = DnaGetopt.REQUIRED,
-        quiet = DnaGetopt.ALONE,
-        silence = DnaGetopt.ALONE,
-        stdout = DnaGetopt.ALONE,
-        tcp = DnaGetopt.ALONE,
-        upstream = DnaGetopt.REQUIRED,
-        server = DnaGetopt.REQUIRED,
-        udp = DnaGetopt.ALONE,
-        verbose = DnaGetopt.ALONE,
-        timeout = DnaGetopt.REQUIRED,
-        wait = DnaGetopt.REQUIRED,
-        help = DnaGetopt.ALONE,
-        version = DnaGetopt.ALONE
+        cache = DnaConfigGetopt.REQUIRED,
+        debug = DnaConfigGetopt.ALONE,
+        stderr = DnaConfigGetopt.ALONE,
+        google = DnaConfigGetopt.ALONE,
+        host = DnaConfigGetopt.REQUIRED,
+        log = DnaConfigGetopt.REQUIRED,
+        ['local'] = DnaConfigGetopt.ALONE,
+        mode = DnaConfigGetopt.REQUIRED,
+        opendns = DnaConfigGetopt.ALONE,
+        port = DnaConfigGetopt.REQUIRED,
+        quiet = DnaConfigGetopt.ALONE,
+        silence = DnaConfigGetopt.ALONE,
+        stdout = DnaConfigGetopt.ALONE,
+        tunnel = DnaConfigGetopt.ALONE,
+        tcp = DnaConfigGetopt.ALONE,
+        upstream = DnaConfigGetopt.REQUIRED,
+        server = DnaConfigGetopt.REQUIRED,
+        udp = DnaConfigGetopt.ALONE,
+        verbose = DnaConfigGetopt.ALONE,
+        timeout = DnaConfigGetopt.REQUIRED,
+        wait = DnaConfigGetopt.REQUIRED,
+        help = DnaConfigGetopt.ALONE,
+        version = DnaConfigGetopt.ALONE
     }, 'config'
     local option, value
-    for option, value in DnaGetopt(arg, 'c:DEGh:l:Lm:Op:sSTu:Uvw:V', options) do
+    for option, value in DnaConfigGetopt(arg, 'c:DEGh:l:Lm:Op:sStTu:Uvw:V', options) do
         if 'c' == option or 'cache' == option then
             config.cache = value
         elseif 'D' == option or 'debug' == option then
@@ -68,6 +69,8 @@ return function (config, ... )
             config.log.level = 'emergency'
         elseif 'S' == option or 'stdout' == option then
             config.log.path = 'stdout'
+        elseif 't' == option or 'tunnel' == option then
+            config.tunnel = true
         elseif 'T' == option or 'tcp' == option then
             config.mode = 'tcp'
         elseif 'u' == option or 'upstream' == option or 'server' == option then

@@ -60,7 +60,7 @@ Mandatory arguments to long options are mandatory for short options too.
   -s, --quiet,                  suppress logging unless interrupted
       --silence
   -S, --stdout                  log to STDOUT
-  -t, --tunnel                  [TODO] communicate remote servers through gateway
+  -t, --tunnel                  communicate remote servers through gateway
   -T, --tcp                     aka '-m tcp', conflict with '--udp'
   -u, --upstream=HOST[:PORT],   HOST as one of remote servers, PORT default: 53,
       --server=HOST[:PORT]      conflict with '--google' and '--opendns'
@@ -114,7 +114,7 @@ end,
     end)
 
     for key, value in dump do
-        debugger.log('@config: ' .. key .. ' = ' .. value, nil, debugger.log.INFO)
+        debugger.log('@config: ' .. key .. ' = ' .. tostring(value), nil, debugger.log.DEBUG)
     end
 end,
 
@@ -167,7 +167,7 @@ end,
 -- @param agent DnaAgent object
 -- @param debugger DnaLogger object
 ['dna.agent.setup'] = function (agent, debugger)
-    debugger.log('@agent: prepare ' .. agent.host .. '.' .. agent.port .. '#' .. agent.mode .. ' (' .. agent.timeout .. ' seconds)', nil, debugger.log.INFO)
+    debugger.log('@agent: prepare ' .. agent.host .. '.' .. agent.port .. '#' .. agent.mode .. '/' .. agent.timeout .. 's', nil, debugger.log.INFO)
 end,
 
 --- ['dna.agent.setup.fail']() - Handles 'dna.agent.setup.fail' event
@@ -233,14 +233,14 @@ end,
     if not route.gateway then
         msg = 'gateway'
     end
-    debugger.log('@route: disable for no ' .. msg, nil, debugger.log.WARNING)
+    debugger.log('@route: disable for no ' .. msg, nil, debugger.log.ERROR)
 end,
 
 --- ['dna.route.setup.done']() - Handles 'dna.route.setup.done' event
 -- @param route DnaRoute object
 -- @param debugger DnaLogger object
 ['dna.route.setup.done'] = function (route, debugger)
-    debugger.log('@route: ' .. route.type:upper() .. ' gateway ' .. route.gateway, nil, debugger.log.INFO)
+    debugger.log('@route: ' .. route.type:upper() .. ' gateway ' .. route.gateway .. ' (every ' .. route.lifetime .. ' seconds)', nil, debugger.log.INFO)
 end,
 
 --- ['dna.route.gc']() - Handles 'dna.route.gc' event
@@ -287,6 +287,21 @@ end,
 -- @param debugger DnaLogger object
 ['dna.route.delete.fail'] = function (context, debugger)
     debugger.log('@route: fail to reject ' .. context.target, nil, debugger.log.WARNING)
+end,
+
+--- ['dna.route.tunnel']() - Handles 'dna.route.tunnel' event
+-- @param context Table of event context
+-- @param debugger DnaLogger object
+['dna.route.tunnel'] = function (context, debugger)
+    debugger.log('@route: tunnel ' .. context.target, nil, debugger.log.INFO)
+    debugger.log('@route: (' .. context.command .. ')', nil, debugger.log.DEBUG)
+end,
+
+--- ['dna.route.tunnel.fail']() - Handles 'dna.route.tunnel.fail' event
+-- @param context Table of event context
+-- @param debugger DnaLogger object
+['dna.route.tunnel.fail'] = function (context, debugger)
+    debugger.log('@route: fail to tunnel ' .. context.target, nil, debugger.log.WARNING)
 end,
 
 }

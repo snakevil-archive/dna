@@ -1,4 +1,4 @@
-local DnaRouteLifetime, DnaRouteGC, DnaRouteTable = 1, 0, {} -- lifetime of dna cache of modern browsers is 10 mins
+local DnaRouteLifetime, DnaRouteGC, DnaRouteTable = 900, os.time(), {} -- lifetime of dna cache of modern browsers is 10 mins
 
 local DnaRoute = {}
 DnaRoute.__index = DnaRoute
@@ -13,27 +13,32 @@ setmetatable(DnaRoute, {
 
 --- DnaRoute.new() - Creates a route operator
 -- @param gateway Gateway of VPN
+-- @param tunnel Table of agents hosts
 -- @param listener Object to listen events report
 -- @return DnaRoute object
-function DnaRoute.new(gateway, listener)
-    local type
+function DnaRoute.new(gateway, tunnel, listener)
+    local ostype
     if os.execute() then
-        _, _, type = os.execute('route > /dev/null 2>&1')
-        if 64 == type then
-            type = 'bsd'
-        elseif type then
-            type = 'gnu'
+        _, _, ostype = os.execute('route > /dev/null 2>&1')
+        if 64 == ostype then
+            ostype = 'bsd'
+        elseif ostype then
+            ostype = 'gnu'
         end
     end
     local self = setmetatable({
+        lifetime = DnaRouteLifetime,
         gateway = gateway,
-        type = type
+        type = ostype
     }, DnaRoute):addListener(listener)
     self:report('dna.route.setup', self)
     if not self.gateway or not self.type then
         self:report('dna.route.setup.fail', self)
     else
         self:report('dna.route.setup.done', self)
+        if 'table' == type(tunnel) and #tunnel then
+            self:tunnel(tunnel)
+        end
     end
     return self
 end
@@ -43,7 +48,7 @@ end
 -- @param context Table of context informations
 function DnaRoute:fire(event, context)
     if self.gateway and self.type and 'dna.server.touch' == event then
-        local index, now, expiration = 0, os.time(), DnaRouteLifetime + os.time()
+        local index, now, expiration = 0, os.time(), self.lifetime + os.time()
         for index = 1, #context.records do
             if DnaRouteTable[context.records[index]] then
                 self:change(context.records[index], expiration)
@@ -51,7 +56,7 @@ function DnaRoute:fire(event, context)
                 self:add(context.records[index], expiration)
             end
         end
-        if now + DnaRouteLifetime > DnaRouteGC then
+        if now + self.lifetime > DnaRouteGC then
             local routes = {}
             for index, expiration in pairs(DnaRouteTable) do
                 if now > expiration then
@@ -119,6 +124,28 @@ function DnaRoute:delete(target)
     end
     DnaRouteTable[target] = nil
     return self:report('dna.route.delete.done', context)
+end
+
+--- DnaRoute:tunnel() - Routes agents
+-- @param tunnel Table of agents hosts
+function DnaRoute:tunnel(tunnel)
+    local context, index
+    for index = 1, #tunnel do
+        context = {
+            target = tunnel[index],
+            command = 'route add -host ' .. tunnel[index]
+        }
+        if 'gnu' == self.type then
+            context.command = context.command .. ' gw'
+        end
+        context.command = context.command .. ' ' .. self.gateway .. ' > /dev/null 2>&1'
+        self:report('dna.route.tunnel', context)
+        if not os.execute(context.command) then
+            self:report('dna.route.tunnel.fail', context)
+        else
+            self:report('dna.route.tunnel.done', context)
+        end
+    end
 end
 
 return DnaRoute
