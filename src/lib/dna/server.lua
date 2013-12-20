@@ -73,6 +73,7 @@ function DnaServer:request()
     else
         request.blob = req
         request.domain = req:sub(14, -5):gsub('[' .. string.char(3, 6) .. ']', '.')
+        request.type = req:sub(-4)
         self:report('dna.server.accept', request)
     end
     return request

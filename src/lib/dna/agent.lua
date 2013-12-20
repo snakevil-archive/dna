@@ -201,12 +201,17 @@ function DnaAgent:appease(request)
         host = request.host,
         port = request.port,
         domain = request.domain,
+        type = request.type,
         blob = self:query(request.blob),
         records = {}
-    }, '', '\192.\0\1\0\1\0\0..\0\4....' -- 0xC0 .(unknown) 0x000100010000 ..(TTL) 0x0004 ....(IP)
-    for match in response.blob:gmatch(pattern) do
-        response.records[1 + #response.records] = string.format('%d.%d.%d.%d', match:byte(-4, -1))
-    end
+    }, 1, '\0\1\0\1....\0\4....' -- TYPE:A CLASS:IN TTL RLENGTH:4 RDATA:<IP>
+    repeat -- compat with Lua 5.1
+        match = response.blob:find(pattern, match)
+        if match then
+            response.records[1 + #response.records] = string.format('%d.%d.%d.%d', response.blob:byte(10 + match, 13 + match))
+            match = 14 + match
+        end
+    until not match
     self.counter = 1 + self.counter
     if response.blob and #response.blob then
         return request.server:respond(response)

@@ -37,17 +37,18 @@ function DnaCache:hit(request)
     if 0 < self.lifetime and request.blob then
         DnaServer = request.server
         request.server = self
-        if not DnaCacheTable[request.domain] then
+        local key = request.domain .. request.type
+        if not DnaCacheTable[key] then
             self:report('dna.cache.miss', request)
-        elseif os.time() > DnaCacheTable[request.domain].expiration then
+        elseif os.time() > DnaCacheTable[key].expiration then
             self:report('dna.cache.expired', request)
         else
-            self:report('dna.cache.hit', DnaCacheTable[request.domain])
+            self:report('dna.cache.hit', DnaCacheTable[key])
             DnaServer:respond{
                 host = request.host,
                 port = request.port,
-                blob = request.blob:sub(1, 2) .. DnaCacheTable[request.domain].blob,
-                records = DnaCacheTable[request.domain].records
+                blob = request.blob:sub(1, 2) .. DnaCacheTable[key].blob,
+                records = DnaCacheTable[key].records
             }
             return
         end
@@ -59,12 +60,13 @@ end
 -- @param response Response object
 function DnaCache:respond(response)
     if 0 < self.lifetime and response then
-        DnaCacheTable[response.domain] = {
+        local key = response.domain .. response.type
+        DnaCacheTable[key] = {
             expiration = self.lifetime + os.time(),
             blob = response.blob:sub(3),
             records = response.records
         }
-        self:report('dna.cache.update', DnaCacheTable[response.domain])
+        self:report('dna.cache.update', DnaCacheTable[key])
         return DnaServer:respond(response)
     end
 end
